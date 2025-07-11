@@ -15,7 +15,7 @@ $query = "SELECT
     d.numero_oficio,
     d.remitente,
     d.numero_empleado,
-    cp.nombre AS nombre_empleado,
+     IFNULL(cp.nombre, d.remitente) AS nombre_empleado, 
     d.asunto, 
     d.tipo,
     d.jud_destino,
@@ -25,7 +25,7 @@ $query = "SELECT
     u.username AS usuario_registro,
     (SELECT COUNT(*) FROM documentos WHERE numero_empleado = d.numero_empleado) AS total_documentos
 FROM documentos d
-LEFT JOIN catalogo_personal cp ON d.numero_empleado = cp.numero_empleado
+LEFT JOIN catalogo_personal cp ON TRIM(d.numero_empleado) = TRIM(cp.numero_empleado)
 LEFT JOIN usuarios u ON d.usuario_registra = u.id
 ORDER BY d.fecha_entrega DESC, d.id DESC";
 

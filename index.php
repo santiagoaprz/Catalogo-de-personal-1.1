@@ -4,6 +4,9 @@ require 'auth_middleware.php';
 requireAuth();
 require 'database.php';
 
+
+
+
 // Obtener el próximo número de oficio
 $numero_oficio = "OF-00001"; // Valor por defecto
 $secuencia_query = "SELECT ultimo_numero FROM secuencia_oficios LIMIT 1";
@@ -29,11 +32,11 @@ $query = "SELECT
     d.asunto,
     d.tipo,
     d.estatus,
-    d.pdf_url,
-    cp.nombre AS nombre_empleado
+    CONCAT('http://', 'localhost/SISTEMA_OFICIOS/', d.pdf_url) AS pdf_url_completo,
+    IFNULL(cp.nombre, d.remitente) AS nombre_empleado
 FROM documentos d
-LEFT JOIN catalogo_personal cp ON d.numero_empleado = cp.numero_empleado
-ORDER BY d.id DESC LIMIT 10";
+LEFT JOIN catalogo_personal cp ON TRIM(d.numero_empleado) = TRIM(cp.numero_empleado)
+ORDER BY d.id DESC LIMIT 50";
 
 $result = mysqli_query($conn, $query);
 
@@ -502,15 +505,18 @@ function validarNumeroEmpleado(numero) {
                                 ">
                                     <?= htmlspecialchars($row['estatus']) ?>
                                 </span>
-                            </td>
-                            <td>
-                                <a href="<?= htmlspecialchars($row['pdf_url']) ?>" 
-                                   target="_blank" 
-                                   class="action-link"
-                                   title="Ver documento PDF">
-                                    📄 Ver
-                                </a>
-                            </td>
+                                <td>
+                                <?php if (!empty($row['pdf_url'])): ?>
+        <a href="<?= 'http://localhost/SISTEMA_OFICIOS/' . htmlspecialchars($row['pdf_url']) ?>" 
+           target="_blank" 
+           class="action-link"
+           title="Ver documento PDF">
+            📄 Ver
+        </a>
+    <?php else: ?>
+        <span class="text-muted">No disponible</span>
+    <?php endif; ?>
+</td>
                             <?php if ($_SESSION['user']['rol'] === 'SISTEMAS'): ?>
                                 <td>
                                     <a href="editar.php?id=<?= $row['id'] ?>" 

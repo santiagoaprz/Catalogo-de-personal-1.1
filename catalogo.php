@@ -3,35 +3,21 @@ require 'session_config.php';
 require 'auth_middleware.php';
 requireAuth();
 require 'database.php';
-// Primero aumentamos el límite de GROUP_CONCAT
+
+// Aumentamos el límite de GROUP_CONCAT
 mysqli_query($conn, "SET SESSION group_concat_max_len = 1000000;");
+
 // Consulta optimizada para el catálogo de personal
 $query = "SELECT 
-    cp.id,
     cp.numero_empleado,
     cp.nombre,
     cp.puesto,
     cp.departamento_jud AS departamento_actual,
-    IFNULL(
-        (SELECT GROUP_CONCAT(
-            CONCAT(
-                COALESCE(hd.departamento_anterior, 'N/A'), 
-                ' → ', 
-                hd.departamento_nuevo,
-                ' (', DATE_FORMAT(hd.fecha_cambio, '%d/%m/%Y'), ')'
-            )
-            ORDER BY hd.fecha_cambio DESC SEPARATOR '<br>'
-        )
-        FROM historial_departamentos hd
-        WHERE hd.personal_id = cp.id
-        ), 'Sin historial registrado') AS historial_deptos,
-    COUNT(DISTINCT d.id) AS total_documentos,
-    GROUP_CONCAT(DISTINCT d.numero_oficio ORDER BY d.fecha_entrega DESC SEPARATOR ', ') AS oficios
+    COUNT(d.id) AS total_documentos
 FROM catalogo_personal cp
-LEFT JOIN documentos d ON TRIM(cp.numero_empleado) = TRIM(d.numero_empleado)
-GROUP BY cp.id, cp.numero_empleado, cp.nombre, cp.puesto, cp.departamento_jud
+LEFT JOIN documentos d ON cp.numero_empleado = d.numero_empleado
+GROUP BY cp.numero_empleado
 ORDER BY cp.nombre";
-
 
 $result = mysqli_query($conn, $query);
 
@@ -142,41 +128,41 @@ if (!$result) {
         <a href="nuevo_personal.php" class="btn">➕ Agregar Nuevo Personal</a>
         
         <table>
-    <thead>
-        <tr>
-            <th>N° Empleado</th>
-            <th>Nombre</th>
-            <th>Puesto</th>
-            <th>Departamento Actual</th>
-            <th>Historial de Departamentos</th>
-            <th>Documentos</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php while ($row = mysqli_fetch_assoc($result)): ?>
-        <tr>
-            <td><?= htmlspecialchars($row['numero_empleado']) ?></td>
-            <td><?= htmlspecialchars($row['nombre']) ?></td>
-            <td><?= htmlspecialchars($row['puesto']) ?></td>
-            <td><?= htmlspecialchars($row['departamento_actual']) ?></td>
-            <td class="historial">
-                <?php 
-                if (!empty($row['historial_deptos']) && $row['historial_deptos'] != 'Sin historial') {
-                    echo str_replace('→', '<br>→', htmlspecialchars($row['historial_deptos']));
-                } else {
-                    echo 'Sin historial registrado';
-                }
-                ?>
-            </td>
-            <td><?= $row['total_documentos'] ?></td>
-            <td>
-                <!-- Botones de acciones -->
-            </td>
-        </tr>
-        <?php endwhile; ?>
-    </tbody>
-</table>
+            <thead>
+                <tr>
+                    <th>N° Empleado</th>
+                    <th>Nombre</th>
+                    <th>Puesto</th>
+                    <th>Departamento Actual</th>
+                    <th>Historial de Departamentos</th>
+                    <th>Documentos</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                <tr>
+                    <td><?= htmlspecialchars($row['numero_empleado']) ?></td>
+                    <td><?= htmlspecialchars($row['nombre']) ?></td>
+                    <td><?= htmlspecialchars($row['puesto']) ?></td>
+                    <td><?= htmlspecialchars($row['departamento_actual']) ?></td>
+                    <td class="historial">
+                        <?php 
+                        if (!empty($row['historial_deptos']) && $row['historial_deptos'] != 'Sin historial') {
+                            echo str_replace('→', '<br>→', htmlspecialchars($row['historial_deptos']));
+                        } else {
+                            echo 'Sin historial registrado';
+                        }
+                        ?>
+                    </td>
+                    <td><?= $row['total_documentos'] ?></td>
+                    <td>
+                        <!-- Botones de acciones -->
+                    </td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
     </div>
 
     <script>
